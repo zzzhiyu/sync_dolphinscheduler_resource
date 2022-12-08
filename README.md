@@ -12,9 +12,9 @@
        pip install apache-dolphinscheduler
        pip install psycopg2
        pip install PyMySQL
-#### 2.生成配置文件
+#### 2.生成pydolphinscheduler配置文件
        pydolphinscheduler config --init
-#### 3.修改配置
+#### 3.修改pydolphinscheduler配置
 ```yaml
 # Licensed to the Apache Software Foundation (ASF) under one
 # or more contributor license agreements.  See the NOTICE file
@@ -76,8 +76,8 @@ default:
     warning_type: NONE
 ```
 
-## 四.插件配置和启动
-#### 1.sync_dolps_resource/src/conf.ini配置文档
+## 四.sync_dolphinscheduler_resource 插件配置和启动
+#### 1.sync_dolphinscheduler_resource/src/conf.ini配置文档
 ```ini
 [url]
 ##dolps创造文件夹的api, ip地址若发生改变，需要进行更改
