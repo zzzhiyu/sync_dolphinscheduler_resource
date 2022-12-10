@@ -6,7 +6,7 @@ from file_source_monitor import SourceMonitor
 
 
 if __name__ == '__main__':
-    # 判断linux存放的源目录是否存在,假如不存在就创造
+    # 判断linux存放的源目录是否存在,假如不存在就退出
     if not os.path.exists(configure.src_dir):
         logger.error(configure.src_dir + ': source is not exist')
         exit('source is not exist')
