@@ -61,44 +61,53 @@ class DolpsResource(Resource):
         response = requests.post(configure.url_create_dir, headers=self.headers, data=params)
         return self.check_response(response, 'create_dir')
 
-    # 得到文件后缀，假如不支持，为返回None
-    def get_suffix(self):
-        suffix = str(os.path.splitext(Path(self.name).name)[-1]).replace('.', '')
-        if suffix not in ['txt', 'log', 'sh', 'bat', 'conf', 'cfg', 'py', 'java', 'sql', 'xml', 'hql',
-                          'properties', 'json', 'yml', 'yaml', 'ini', 'js']:
-            logger.error(self.name + ': This suffix is not supported')
-            return None
-        return suffix
-
-    def create_or_update_file(self):
-        ## 判断文件是否存在
-        if self.is_resource_exist():
-            self.create_or_update_resource()
-            return True
+    def create_file(self, fp):
+        # 判断父目录id是否存在
+        if self.is_resource_exist(self.parent_dir):
+            pid = self.get_parent_dir_id()
         else:
-            ##判断父目录id是否存在
-            if self.is_resource_exist(self.parent_dir):
-                pid = self.get_parent_dir_id()
-            else:
-                logger.error('`parent_dir`: ' + self.parent_dir + ' is not exist in dolphinsheduler resource.')
-                raise PyDSJavaGatewayException(
-                    "`parent_dir`: " + self.parent_dir + " is not exist in dolphinsheduler resource."
-                )
-            fileName = os.path.splitext(Path(self.name).name)[0]
-            suffix = self.get_suffix()
-            if suffix is None:
-                return False
-            params = {'pid': pid, 'type': self.type, 'suffix': suffix, 'fileName': fileName, 'content': self.content,
-                      'currentDir': self.parent_dir}
-            response = requests.post(configure.url_create_file, headers=self.headers, data=params)
-            return self.check_response(response, 'create_or_update_file')
+            logger.error('`parent_dir`: ' + self.parent_dir + ' is not exist in dolphinsheduler resource.')
+            raise PyDSJavaGatewayException(
+                "`parent_dir`: " + self.parent_dir + " is not exist in dolphinsheduler resource."
+            )
+        # 获取参数
+        file_name = Path(self.name).name
+        params = {'type': self.type, 'name': file_name, 'pid': pid, 'currentDir': self.parent_dir}
+        # 配置传输的文件
+        files = {'file': (file_name, fp, 'application/json')}
+        response = requests.post(configure.url_create_resource, headers=self.headers, params=params, files=files)
+        return self.check_response(response, 'create_file')
+
+    def update_file(self, fp):
+        id = self.get_id_from_database()
+        # 修改url
+        url_param = {'id': id}
+        url = configure.url_delete_update_resource.format(**url_param)
+        # 配置参数
+        file_name = Path(self.name).name
+        params = {'id': id, 'name': file_name, 'type': self.type}
+        # 配置传输的文件
+        files = {'file': (file_name, fp, 'application/json')}
+        response = requests.put(url, headers=self.headers, params=params, files=files)
+        return self.check_response(response, 'update_file')
+
+    def create_or_update_file(self, file_path):
+        # 打开原文件
+        fp = open(file_path, 'rb')
+        # 判断文件是否存在
+        if not self.is_resource_exist():
+            success = self.create_file(fp)
+        else:
+            success = self.update_file(fp)
+        fp.close()
+        return success
 
     # 删除资源或者目录
     def delete_resource(self):
         ##获取name的id
         id = self.get_id_from_database()
         params = {'id': id}
-        url = configure.url_delete_resource.format(**params)
+        url = configure.url_delete_update_resource.format(**params)
         response = requests.delete(url, headers=self.headers)
         return self.check_response(response, 'delete_resource')
 
@@ -137,3 +146,5 @@ class DolpsResource(Resource):
         ##假如资源存在，respond的success = false 报resource already exists 错误
         response = requests.get(configure.url_query_resource, headers=self.headers, params=params)
         return not self.check_response(response, 'is_resource_exist', file_name)
+
+

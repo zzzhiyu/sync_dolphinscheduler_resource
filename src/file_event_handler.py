@@ -10,8 +10,8 @@ from dolps_resource import DolpsResource
 class FileSystem:
     def __init__(self, file_path,
                  update_time: Optional[str] = None,
-                 size: Optional[str] = None,
-                 is_dir: Optional[str] = None):
+                 size: Optional[int] = None,
+                 is_dir: Optional[bool] = None):
         self.file_path = file_path
         self.update_time = update_time
         self.size = size
@@ -31,32 +31,30 @@ class FileSystem:
             logger.warning(self.file_path + ' is not exists! fail to delete dolps resource')
         logger.info('success sync: delete resource[' + self.file_path + '] in dolps')
 
-    # 获取文件内容
-    def get_content(self):
-        content = None
-        # 如果文件不存在就返回
-        if os.path.exists(self.file_path):
-            file = open(self.file_path, 'r', encoding='utf-8', errors='ignore')
-            content = file.read()
-            file.close()
-        # 如果文件不存在或者读取失败就返回 ' '
-        return content if content is not None and len(content) != 0 else ' '
-
     # 将文件内容复制到dolps和备份
     def create_or_update_file_in_dolps(self, dolps_file: str):
         logger.info('start create or update dolps file[' + dolps_file + ']...')
-        # 传输内容到dolpsResource
-        dolps_resource = DolpsResource(name=dolps_file)
-        # 不能得到文件的后缀，不支持该文件格式，直接返回
-        if dolps_resource.get_suffix() is None:
+        # 判断文件是否存在
+        if not os.path.exists(self.file_path):
+            logger.warning(self.file_path + 'is not exists')
             return
-        # 设置文件内容
-        dolps_resource.content = self.get_content()
-        success = dolps_resource.create_or_update_file()
-        if not success:
-            logger.error("fail to create or update dolps file:" + dolps_file)
-            raise IOError("fail to create or update dolps file:" + dolps_file)
-        logger.info('success sync: copy file[' + self.file_path + '] to dolps[' + dolps_file + ']')
+        # 获取文件的大小
+        if self.size is None:
+            self.size = os.stat(self.file_path).st_size
+        # 对于空文件和大于5M的文件直接返回
+        if self.size == 0:
+            logger.warning(self.file_path + 'is empty! fail to create or update dolps resource')
+            return
+        elif self.size >= 5 * 1024 * 1024:
+            logger.warning(self.file_path + '\'s size more than 5M! fail to create or update dolps resource')
+            return
+        else:
+            dolps_resource = DolpsResource(name=dolps_file)
+            success = dolps_resource.create_or_update_file(self.file_path)
+            if not success:
+                logger.error("fail to create or update dolps file:" + dolps_file)
+                raise IOError("fail to create or update dolps file:" + dolps_file)
+            logger.info('success sync: copy file[' + self.file_path + '] to dolps[' + dolps_file + ']')
 
     # 在dolps和备份中创建相应的目录
     def mkdir_in_dolps(self, dolps_dir: str):

@@ -19,10 +19,9 @@ def get_logger(name, current_log_dir):
     # 创建日志存放目录
     if not os.path.exists(current_log_dir):
         os.makedirs(current_log_dir)
-    dt = datetime.datetime.now().strftime('%Y_%m_%dT%H_%M_%S')
-    path = current_log_dir + '/logs_' + dt
+    path = current_log_dir + '/logs'
     path = path.replace('\\', '/')
-    log_handler = TimedRotatingFileHandler(path, when="midnight", encoding="utf-8")
+    log_handler = TimedRotatingFileHandler(path, when="midnight", interval=1, encoding="utf-8")
     log_handler.setLevel(logging.DEBUG)
     log_handler.setFormatter(formatter)
     log.addHandler(log_handler)
@@ -44,9 +43,9 @@ def get_value(section, option):
 # 创建dolps目录url
 url_create_dir = get_value('url', 'create_dir')
 # 创建dolps文件url
-url_create_file = get_value('url', 'create_file')
-# 删除olps资源url
-url_delete_resource = get_value('url', 'delete_update_resource')
+url_create_resource = get_value('url', 'create_resource')
+# 删除更新dolps资源url
+url_delete_update_resource = get_value('url', 'delete_update_resource')
 # 重命名olps资源url
 url_rename_resource = get_value('url', 'delete_update_resource')
 # 查询dolps是否存在url
